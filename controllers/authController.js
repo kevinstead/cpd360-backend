@@ -1,78 +1,78 @@
+
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User"); // Adjust path if needed
+const User = require("../models/User");
 
-const generateAccessToken = (user) => {
-  return jwt.sign(
-    { id: user._id, role: user.role },
-    process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN }
-  );
-};
-
-const generateRefreshToken = (user) => {
-  return jwt.sign(
-    { id: user._id },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN }
-  );
-};
-
-const login = async (req, res) => {
-  const { email, password } = req.body;
+const registerUser = async (req, res) => {
+  const { name, email, password, role } = req.body;
 
   try {
-    const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(400).json({ msg: "Invalid email or password" });
-    }
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ msg: "User already exists" });
 
-    const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    res
-      .cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      })
-      .json({ accessToken });
+    const newUser = new User({
+      name,
+      email,
+      password: hashedPassword,
+      role: role || "patient" // Default role if not passed
+    });
+
+    await newUser.save();
+
+    const payload = {
+      userId: newUser._id,
+      role: newUser.role
+    };
+
+    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "1d"
+    });
+
+    res.status(201).json({
+      accessToken,
+      role: newUser.role
+    });
+
   } catch (err) {
-    console.error(err);
+    console.error("Register error:", err);
     res.status(500).json({ msg: "Server error" });
   }
 };
 
-const refresh = (req, res) => {
-  const token = req.cookies.refreshToken;
-  if (!token) return res.status(401).json({ msg: "No refresh token provided" });
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
 
   try {
-    const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
-    const accessToken = jwt.sign(
-      { id: decoded.id },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN }
-    );
-    res.json({ accessToken });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ msg: "Invalid credentials" });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
+
+    const payload = {
+      userId: user._id,
+      role: user.role
+    };
+
+    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "1d"
+    });
+
+    res.status(200).json({
+      accessToken,
+      role: user.role
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(403).json({ msg: "Invalid or expired refresh token" });
+    console.error("Login error:", err);
+    res.status(500).json({ msg: "Server error" });
   }
 };
 
-const logout = (req, res) => {
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
-  });
-  res.json({ msg: "Logged out" });
-};
-
 module.exports = {
-  login,
-  refresh,
-  logout,
+  registerUser,
+  loginUser
 };
-
