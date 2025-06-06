@@ -2,15 +2,20 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
-const authRoutes = require("./routes/auth"); // Importing auth routes
+const cookieParser = require("cookie-parser");
+const authRoutes = require("./routes/authRoutes");
 
 dotenv.config();
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:3000", "https://cpd360.vercel.app"],
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 // MongoDB Connection
 mongoose.connect(process.env.DB_URI, {
@@ -30,4 +35,3 @@ app.get("/", (req, res) => res.send("CPD360 Backend Running"));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-// trigger redeploy
