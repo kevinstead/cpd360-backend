@@ -1,18 +1,8 @@
 const express = require("express");
-const router = express.Router();
-const {
-  login,
-  refresh,
-  logout
-} = require("../controllers/authController");
+const router = express.Router(); // ← THIS LINE must be here
 
-// POST /api/auth/login
-router.post("/login", login);
+const { loginUser } = require("../controllers/authController");
 
-// GET /api/auth/refresh
-router.get("/refresh", refresh);
-
-// POST /api/auth/logout
-router.post("/logout", logout);
+router.post("/login", loginUser);
 
 module.exports = router;
