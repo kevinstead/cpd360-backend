@@ -16,12 +16,13 @@ mongoose.connect(process.env.DB_URI, {
 
 async function seed() {
   try {
-    const appointment = new Appointment({
-      providerId: "664fbf5d9f2c5a4390a3e78f", // ✅ Use a real provider ID here
-      patientName: "John Doe",
-      date: new Date(),
-      reason: "Routine check-up"
-    });
+ const appointment = new Appointment({
+  provider: "664fbf5d9f2c5a4390a3e78f", // <-- must match your schema’s field name
+  clientName: "John Doe",               // or patientName, whichever your model uses
+  date: new Date(),
+  notes: "Routine check-up"             // or reason, depending on your schema
+});
+ 
 
     await appointment.save();
     console.log("✅ Test appointment seeded");

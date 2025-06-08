@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
+const scribeRoutes = require("./routes/scribeRoutes");    
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ mongoose.connect(process.env.DB_URI, {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/appointments", appointmentRoutes);
+app.use("/api/scribe", scribeRoutes);
 
 // Test Route
 app.get("/", (req, res) => res.send("CPD360 Backend Running"));
