@@ -3,9 +3,12 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
-const authRoutes = require("./routes/authRoutes");
+
+// your existing routes
+const authRoutes        = require("./routes/authRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
-const scribeRoutes = require("./routes/scribeRoutes");    
+// ← add the Scribe routes import here
+const scribeRoutes      = require("./routes/scribeRoutes");
 
 dotenv.config();
 
@@ -32,6 +35,7 @@ mongoose.connect(process.env.DB_URI, {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/appointments", appointmentRoutes);
+// ← mount the Scribe routes right alongside your other APIs
 app.use("/api/scribe", scribeRoutes);
 
 // Test Route
