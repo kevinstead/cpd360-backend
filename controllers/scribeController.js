@@ -23,7 +23,8 @@ exports.uploadAudio = upload.single("audio");
  */
 exports.startScribe = async (req, res) => {
   try {
-    const providerId = req.user.id;
+    +    // if auth is disabled, fall back to a passed-in provider field
++    const providerId = req.user?.id || req.body.provider;
     const { patient, appointment } = req.body;
 
     if (!req.file || !patient || !appointment) {
