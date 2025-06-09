@@ -4,19 +4,12 @@ const AWS       = require('aws-sdk');
 const fs        = require('fs');
 const path      = require('path');
 const mongoose  = require('mongoose');
-const { Configuration, OpenAIApi } = require('openai');
 
-const ScribeSession = require('../models/ScribeSession');
-const ClinicalNote  = require('../models/ClinicalNote');
-
-AWS.config.update({ region: process.env.AWS_REGION });
-const s3  = new AWS.S3();
-const sqs = new AWS.SQS();
-
-const openai = new OpenAIApi(
-  new Configuration({ apiKey: process.env.OPENAI_API_KEY })
-);
-
+// Instantiate OpenAI client directly
+const OpenAI = require('openai');
+const openai = new OpenAI({
+apiKey: process.env.OPENAI_API_KEY
+});
 mongoose
   .connect(process.env.DB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Worker: MongoDB connected'))
