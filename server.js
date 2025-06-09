@@ -1,5 +1,6 @@
 // server.js
-require('dotenv').config();
+require('dotenv').config();console.log("🔐 JWT_SECRET is:", process.env.JWT_SECRET);
+
 
 const express       = require('express');
 const cors          = require('cors');

@@ -1,41 +1,37 @@
 // controllers/scribeController.js
 require("dotenv").config();
-const AWS     = require("aws-sdk");
-const multer  = require("multer");
-const ScribeSession = require("../models/ScribeSession");
+const AWS            = require("aws-sdk");
+const multer         = require("multer");
+const ScribeSession  = require("../models/ScribeSession");
 
-// in-memory multer storage
 const upload = multer({ storage: multer.memoryStorage() });
 
 AWS.config.update({ region: process.env.AWS_REGION });
 const s3  = new AWS.S3();
 const sqs = new AWS.SQS();
 
-const BUCKET    = process.env.S3_BUCKET;       // e.g. "cpd360-scribe-audio"
-const QUEUE_URL = process.env.SQS_QUEUE_URL;   // your full SQS URL
+const BUCKET    = process.env.S3_BUCKET;      // ingest bucket name
+const QUEUE_URL = process.env.SQS_QUEUE_URL;  // your SQS URL
 
+// middleware to parse the "audio" field
 exports.uploadAudio = upload.single("audio");
 
-// POST /api/scribe
+/**
+ * POST /api/scribe
+ * - Expects form-data: audio file, patient, appointment
+ * - Uploads audio to S3, creates a ScribeSession, enqueues SQS
+ */
 exports.startScribe = async (req, res) => {
   try {
-    const providerId  = req.user.id;                // from your auth middleware
+    const providerId = req.user.id;
     const { patient, appointment } = req.body;
+
     if (!req.file || !patient || !appointment) {
       return res.status(400).json({ error: "audio, patient, and appointment are required." });
     }
 
-    // create session in Mongo
-    const session = await ScribeSession.create({
-      provider:   providerId,
-      patient,
-      appointment,
-      audioUrl:   "",
-      status:     "pending"
-    });
-
-    // upload to S3
-    const key = `ingest/${session._id}/${Date.now()}_${req.file.originalname}`;
+    // 1) Upload the audio to S3
+    const key = `ingest/${providerId}/${Date.now()}_${req.file.originalname}`;
     await s3.putObject({
       Bucket:      BUCKET,
       Key:         key,
@@ -43,12 +39,18 @@ exports.startScribe = async (req, res) => {
       ContentType: req.file.mimetype
     }).promise();
 
-    // build public URL and update session
     const audioUrl = `https://${BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-    session.audioUrl = audioUrl;
-    await session.save();
 
-    // enqueue for processing
+    // 2) Create the session in MongoDB with the real audioUrl
+    const session = await ScribeSession.create({
+      provider:    providerId,
+      patient,
+      appointment,
+      audioUrl,
+      status:      "pending"
+    });
+
+    // 3) Enqueue for processing
     await sqs.sendMessage({
       QueueUrl:    QUEUE_URL,
       MessageBody: JSON.stringify({
@@ -57,6 +59,7 @@ exports.startScribe = async (req, res) => {
       })
     }).promise();
 
+    // 4) Respond to client
     return res.status(201).json({
       sessionId: session._id,
       audioUrl,
@@ -68,11 +71,15 @@ exports.startScribe = async (req, res) => {
   }
 };
 
-// GET /api/scribe/:id
+/**
+ * GET /api/scribe/:id
+ * Returns the ScribeSession document
+ */
 exports.getScribe = async (req, res) => {
   try {
     const session = await ScribeSession.findById(req.params.id)
       .populate("provider patient appointment", "name");
+
     if (!session) {
       return res.status(404).json({ error: "Session not found." });
     }
@@ -83,7 +90,11 @@ exports.getScribe = async (req, res) => {
   }
 };
 
-// POST /api/scribe/:id/finalize
+/**
+ * POST /api/scribe/:id/finalize
+ * Body JSON: notesDraft, codeSuggestions
+ * Allows overriding the AI’s draft
+ */
 exports.finalizeScribe = async (req, res) => {
   try {
     const { notesDraft, codeSuggestions } = req.body;
@@ -92,6 +103,7 @@ exports.finalizeScribe = async (req, res) => {
       { notesDraft, codeSuggestions, status: "ready" },
       { new: true }
     );
+
     if (!session) {
       return res.status(404).json({ error: "Session not found." });
     }
