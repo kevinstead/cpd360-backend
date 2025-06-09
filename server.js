@@ -1,6 +1,9 @@
 // server.js
 require('dotenv').config();console.log("🔐 JWT_SECRET is:", process.env.JWT_SECRET);
 
+console.log("→ AWS_ACCESS_KEY_ID:", JSON.stringify(process.env.AWS_ACCESS_KEY_ID));
+console.log("→ AWS_SECRET_ACCESS_KEY:", JSON.stringify(process.env.AWS_SECRET_ACCESS_KEY));
+console.log("→ AWS_REGION:", JSON.stringify(process.env.AWS_REGION));
 
 const express       = require('express');
 const cors          = require('cors');
