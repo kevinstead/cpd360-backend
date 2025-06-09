@@ -1,12 +1,9 @@
-// routes/scribeRoutes.js
-const express    = require("express");
-const router     = express.Router();
+// routes/scribe.js
+const express = require("express");
+const router  = express.Router();
 const controller = require("../controllers/scribeController");
-const auth       = require("../middleware/auth");  // your JWT auth middleware
 
-// all scribe endpoints require a logged-in user
-router.use(auth);
-
+// uploadAudio parses the `audio` field
 router.post(
   "/",
   controller.uploadAudio,
