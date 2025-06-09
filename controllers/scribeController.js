@@ -23,22 +23,26 @@ exports.uploadAudio = upload.single("audio");
  */
 exports.startScribe = async (req, res) => {
   try {
-    +    // if auth is disabled, fall back to a passed-in provider field
-+    const providerId = req.user?.id || req.body.provider;
+    // if auth is disabled, fall back to a passed-in provider field
+    const providerId = req.user?.id || req.body.provider;
     const { patient, appointment } = req.body;
 
-    if (!req.file || !patient || !appointment) {
-      return res.status(400).json({ error: "audio, patient, and appointment are required." });
+    if (!providerId || !req.file || !patient || !appointment) {
+      return res
+        .status(400)
+        .json({ error: "provider, audio, patient, and appointment are required." });
     }
 
     // 1) Upload the audio to S3
     const key = `ingest/${providerId}/${Date.now()}_${req.file.originalname}`;
-    await s3.putObject({
-      Bucket:      BUCKET,
-      Key:         key,
-      Body:        req.file.buffer,
-      ContentType: req.file.mimetype
-    }).promise();
+    await s3
+      .putObject({
+        Bucket:      BUCKET,
+        Key:         key,
+        Body:        req.file.buffer,
+        ContentType: req.file.mimetype,
+      })
+      .promise();
 
     const audioUrl = `https://${BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
@@ -48,69 +52,28 @@ exports.startScribe = async (req, res) => {
       patient,
       appointment,
       audioUrl,
-      status:      "pending"
+      status:      "pending",
     });
 
     // 3) Enqueue for processing
-    await sqs.sendMessage({
-      QueueUrl:    QUEUE_URL,
-      MessageBody: JSON.stringify({
-        sessionId: session._id.toString(),
-        s3Key:     key
+    await sqs
+      .sendMessage({
+        QueueUrl:    QUEUE_URL,
+        MessageBody: JSON.stringify({
+          sessionId: session._id.toString(),
+          s3Key:     key,
+        }),
       })
-    }).promise();
+      .promise();
 
     // 4) Respond to client
     return res.status(201).json({
       sessionId: session._id,
       audioUrl,
-      status:    session.status
+      status:    session.status,
     });
   } catch (err) {
     console.error("startScribe error:", err);
     return res.status(500).json({ error: "Failed to start scribe session." });
-  }
-};
-
-/**
- * GET /api/scribe/:id
- * Returns the ScribeSession document
- */
-exports.getScribe = async (req, res) => {
-  try {
-    const session = await ScribeSession.findById(req.params.id)
-      .populate("provider patient appointment", "name");
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found." });
-    }
-    return res.json(session);
-  } catch (err) {
-    console.error("getScribe error:", err);
-    return res.status(500).json({ error: "Failed to fetch session." });
-  }
-};
-
-/**
- * POST /api/scribe/:id/finalize
- * Body JSON: notesDraft, codeSuggestions
- * Allows overriding the AI’s draft
- */
-exports.finalizeScribe = async (req, res) => {
-  try {
-    const { notesDraft, codeSuggestions } = req.body;
-    const session = await ScribeSession.findByIdAndUpdate(
-      req.params.id,
-      { notesDraft, codeSuggestions, status: "ready" },
-      { new: true }
-    );
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found." });
-    }
-    return res.json({ success: true, session });
-  } catch (err) {
-    console.error("finalizeScribe error:", err);
-    return res.status(500).json({ error: "Failed to finalize session." });
   }
 };
