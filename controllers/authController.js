@@ -62,7 +62,7 @@ const loginUser = async (req, res) => {
     });
 
     res.status(200).json({
-      token,
+      token: accessToken,
       role: user.role
     });
 
