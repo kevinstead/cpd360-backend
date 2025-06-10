@@ -1,24 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const Appointment = require("../models/Appointment");
+const auth = require("../middleware/auth"); // ✅ This is your real JWT middleware
+const appointmentCtrl = require("../controllers/appointmentController"); // ✅ Points to full CRUD logic
 
-// Sample middleware to simulate authentication
-// Replace with real middleware (e.g., JWT verify)
-const authenticate = (req, res, next) => {
-  // In real setup: extract user ID from token
-  req.user = { id: "64a123abc123456789abcdef" }; // mock provider ID
-  next();
-};
-
-// GET /api/appointments
-router.get("/", authenticate, async (req, res) => {
-  try {
-    const appointments = await Appointment.find({ providerId: req.user.id });
-    res.json(appointments);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server Error" });
-  }
-});
+// Routes
+router.post("/", auth, appointmentCtrl.createAppointment);
+router.get("/", auth, appointmentCtrl.getMyAppointments);
+router.put("/:id", auth, appointmentCtrl.updateAppointment);
+router.delete("/:id", auth, appointmentCtrl.deleteAppointment);
 
 module.exports = router;
