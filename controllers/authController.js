@@ -23,7 +23,7 @@ const registerUser = async (req, res) => {
     await newUser.save();
 
     const payload = {
-      userId: newUser._id,
+      id: newUser._id,
       role: newUser.role
     };
 
@@ -32,7 +32,7 @@ const registerUser = async (req, res) => {
     });
 
     res.status(201).json({
-      accessToken,
+      token: accessToken,
       role: newUser.role
     });
 
@@ -52,17 +52,17 @@ const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
 
-    const payload = {
-      userId: user._id,
-      role: user.role
-    };
+   const payload = {
+    id: user._id,
+    role: user.role
+  };
 
     const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "1d"
     });
 
     res.status(200).json({
-      accessToken,
+      token,
       role: user.role
     });
 

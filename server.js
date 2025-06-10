@@ -17,7 +17,7 @@ const scribeRoutes      = require('./routes/scribeRoutes');      // scribeRoutes
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://cpd360.vercel.app'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'https://cpd360.vercel.app'],
   credentials: true
 }));
 app.use(express.json());
