@@ -27,7 +27,7 @@ const registerUser = async (req, res) => {
       role: newUser.role
     };
 
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
+    const Token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "1d"
     });
 
@@ -52,14 +52,16 @@ const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
 
-   const payload = {
-    id: user._id,
-    role: user.role
-  };
+    const payload = {
+      id: user._id,
+      role: user.role
+    };
 
     const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "1d"
     });
+
+    console.log("✅ JWT Payload:", payload);
 
     res.status(200).json({
       token: accessToken,
@@ -70,9 +72,4 @@ const loginUser = async (req, res) => {
     console.error("Login error:", err);
     res.status(500).json({ msg: "Server error" });
   }
-};
-
-module.exports = {
-  registerUser,
-  loginUser
 };
