@@ -1,12 +1,11 @@
-// middleware/auth.js
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
+const User = require('../models/User'); // only needed if you want to verify user still exists
 
-module.exports = function authMiddleware(req, res, next) {
-  // 1) Grab the Authorization header
+// ─── Protect ───────────────────────────────────────────────────
+// Verifies JWT and attaches { id, role } to req.user
+const auth = async (req, res, next) => {
   const authHeader = req.header('Authorization');
-  console.log('AUTH HEADER:', authHeader);  // for debugging
-
   if (!authHeader) {
     return res.status(401).json({ msg: 'No token, authorization denied' });
   }
@@ -17,13 +16,29 @@ module.exports = function authMiddleware(req, res, next) {
   }
 
   try {
-    // 2) Verify with the correct environment variable
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // 3) Attach the payload (your token contains { id, iat, exp })
-    req.user = { id: decoded.id };
-    return next();
+    // Optionally, verify user is still in the database:
+    // const user = await User.findById(decoded.id);
+    // if (!user) throw new Error('User not found');
+    req.user = { id: decoded.id, role: decoded.role };
+    next();
   } catch (err) {
     console.error('auth verify error:', err.message);
     return res.status(401).json({ msg: 'Token is not valid' });
   }
 };
+
+// ─── Authorize ────────────────────────────────────────────────
+// Takes a list of allowed roles: e.g. authorize('provider','admin')
+const authorize = (...allowedRoles) => (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ msg: 'Not authenticated' });
+  }
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ msg: 'Forbidden: insufficient role' });
+  }
+  next();
+};
+
+module.exports = { auth, authorize };
+

@@ -1,12 +1,21 @@
-const express = require("express");
-const router = express.Router();
-const auth = require("../middleware/auth"); // ✅ This is your real JWT middleware
-const appointmentCtrl = require("../controllers/appointmentController"); // ✅ Points to full CRUD logic
+const express    = require('express');
+const router     = express.Router();
+const { auth, authorize } = require('../middleware/auth');
+const appointmentCtrl     = require('../controllers/appointmentController');
 
-// Routes
-router.post("/", auth, appointmentCtrl.createAppointment);
-router.get("/", auth, appointmentCtrl.getMyAppointments);
-router.put("/:id", auth, appointmentCtrl.updateAppointment);
-router.delete("/:id", auth, appointmentCtrl.deleteAppointment);
+// POST   /api/appointments        ← any logged-in user
+router.post('/', auth, appointmentCtrl.createAppointment);
+
+// GET    /api/appointments        ← provider/admin only
+router.get('/', auth, authorize('provider','admin'), appointmentCtrl.getAllAppointments);
+
+// GET    /api/appointments/me     ← each user sees only their own
+router.get('/me', auth, appointmentCtrl.getMyAppointments);
+
+// PUT    /api/appointments/:id    ← any logged-in user (you can add ownership checks later)
+router.put('/:id', auth, appointmentCtrl.updateAppointment);
+
+// DELETE /api/appointments/:id    ← any logged-in user
+router.delete('/:id', auth, appointmentCtrl.deleteAppointment);
 
 module.exports = router;
