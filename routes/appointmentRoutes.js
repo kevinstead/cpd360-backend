@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { auth, authorize } = require('../middleware/auth');
-const appointmentCtrl = require('../controllers/appointmentController');
+const appointmentCtrl = require('../controllers/appointmentController'); // ✅
+
 
 // POST   /api/appointments        ← any logged-in user
 router.post('/', auth, appointmentCtrl.createAppointment);
