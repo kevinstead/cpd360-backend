@@ -1,121 +1,116 @@
-# CPD360 NexGen Suite
+const Appointment = require("../models/Appointment");
 
-A modern web application for managing medical practice workflows, with separate provider and patient experiences.
+// ─── Create a New Appointment ──────────────────────────────────────────────
+exports.createAppointment = async (req, res) => {
+  try {
+    const appointment = new Appointment({
+      ...req.body,
+      user: req.user.id,
+      provider: req.body.provider || req.user.id
+    });
 
-## Table of Contents
+    const saved = await appointment.save();
+    res.status(201).json(saved);
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to create appointment",
+      error: err.message
+    });
+  }
+};
 
-* [Overview](#overview)
-* [Features](#features)
-* [Architecture & Folder Structure](#architecture--folder-structure)
-* [Installation](#installation)
-* [Configuration](#configuration)
-* [Usage](#usage)
-* [Roadmap](#roadmap)
-* [Contributing](#contributing)
-* [License](#license)
+// ─── Get All Appointments (Admin or Provider) ──────────────────────────────
+exports.getAllAppointments = async (req, res) => {
+  try {
+    const { status, startDate, endDate } = req.query;
+    const query = {};
 
-## Overview
+    if (status) query.status = status;
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate);
+      if (endDate) query.date.$lte = new Date(endDate);
+    }
 
-CPD360 NexGen Suite streamlines scheduling, patient management, and provider analytics in a unified platform. It consists of a Node/Express backend and a React-based frontend.
+    const appointments = await Appointment.find(query).sort({ date: 1 });
+    res.json(appointments);
+  } catch (err) {
+    res.status(500).json({
+      message: "Error fetching appointments",
+      error: err.message
+    });
+  }
+};
 
-## Features
+// ─── Get My Appointments ───────────────────────────────────────────────────
+exports.getMyAppointments = async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ user: req.user.id }).sort({ date: 1 });
+    res.json(appointments);
+  } catch (err) {
+    res.status(500).json({
+      message: "Error fetching your appointments",
+      error: err.message
+    });
+  }
+};
 
-* Role-based authentication and routing (provider vs. patient)
-* Appointments CRUD operations
-* Scribe note integration
-* Provider analytics dashboard
-* Patient portal with messaging
+// ─── Get Provider's Appointments ───────────────────────────────────────────
+exports.getProviderAppointments = async (req, res) => {
+  try {
+    const { status, startDate, endDate } = req.query;
+    const query = { provider: req.user.id };
 
-## Architecture & Folder Structure
+    if (status) query.status = status;
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = new Date(startDate);
+      if (endDate) query.date.$lte = new Date(endDate);
+    }
 
-```bash
-CPD360/
-├── Backend_Rebuilt/        # Express API server
-│   ├── controllers/
-│   ├── dump/
-│   ├── logs/
-│   ├── middleware/
-│   ├── models/
-│   ├── routes/
-│   ├── scripts/
-│   ├── worker/
-│   ├── .env
-│   ├── .env.example
-│   ├── .gitignore
-│   ├── package.json
-│   └── server.js
-└── Frontend_Rebuilt/       # React application
-    └── src/
-        ├── components/    # Reusable UI components
-        ├── layouts/       # Page layouts
-        ├── pages/         # Route-based pages
-        ├── services/      # API call wrappers
-        ├── utils/         # Helper functions
-        ├── .env           # Environment variables
-        ├── App.js         # Root component
-        ├── index.js       # React entry point
-        └── main.js        # App bootstrap
-```
+    const appointments = await Appointment.find(query).sort({ date: 1 });
+    res.json(appointments);
+  } catch (err) {
+    res.status(500).json({
+      message: "Error fetching provider appointments",
+      error: err.message
+    });
+  }
+};
 
-## Installation
+// ─── Update Appointment ────────────────────────────────────────────────────
+exports.updateAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, reason, status } = req.body;
 
-1. **Backend**
+    const updated = await Appointment.findByIdAndUpdate(
+      id,
+      { date, reason, status },
+      { new: true }
+    );
 
-   ```bash
-   cd Backend_Rebuilt
-   npm install
-   ```
-2. **Frontend**
+    if (!updated) return res.status(404).json({ message: "Appointment not found" });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({
+      message: "Error updating appointment",
+      error: err.message
+    });
+  }
+};
 
-   ```bash
-   cd Frontend_Rebuilt
-   npm install
-   ```
+// ─── Delete Appointment ────────────────────────────────────────────────────
+exports.deleteAppointment = async (req, res) => {
+  try {
+    const deleted = await Appointment.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Appointment not found" });
 
-## Configuration
-
-Copy `.env.example` to `.env` in each project and set the following:
-
-```
-# Backend_Rebuilt/.env
-PORT=4000
-MONGODB_URI=mongodb://<your-uri>
-JWT_SECRET=<your-secret>
-
-# Frontend_Rebuilt/.env
-REACT_APP_API_URL=http://localhost:4000/api
-```
-
-## Usage
-
-```bash
-# Start backend
-cd Backend_Rebuilt
-npm run dev
-
-# Start frontend
-cd ../Frontend_Rebuilt
-npm start
-```
-
-Open your browser at `http://localhost:3000`.
-
-## Roadmap
-
-* [x] Authentication & role routing
-* [ ] Appointments interfaces
-* [ ] Scribe upload & parsing
-* [ ] Analytics dashboard enhancements
-* [ ] Patient messaging improvements
-
-## Contributing
-
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/YourFeature`)
-3. Commit your changes (\`git commit -m "Add feature"
-4. Push to the branch (`git push origin feature/YourFeature`)
-5. Open a Pull Request
-
-## License
-
-MIT
+    res.json({ message: "Appointment deleted" });
+  } catch (err) {
+    res.status(500).json({
+      message: "Error deleting appointment",
+      error: err.message
+    });
+  }
+};
