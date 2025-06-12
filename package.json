@@ -1,6 +1,8 @@
 {
   "name": "cpd360-backend",
   "version": "1.0.0",
+    "version": "1.0.0",
++ "cacheBreaker": "2025-06-11",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
