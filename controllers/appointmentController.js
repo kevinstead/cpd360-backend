@@ -1,61 +1,121 @@
-const Appointment = require("../models/Appointment");
+# CPD360 NexGen Suite
 
-// Create a new appointment
-exports.createAppointment = async (req, res) => {
-  try {
-    const appointment = new Appointment({
-      ...req.body,
-      user: req.user.id // from auth middleware
-    });
-    const saved = await appointment.save();
-    res.status(201).json(saved);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to create appointment", error: err.message });
-  }
-};
+A modern web application for managing medical practice workflows, with separate provider and patient experiences.
 
-// Get all appointments (provider or admin can access all)
-exports.getAllAppointments = async (req, res) => {
-  try {
-    const appointments = await Appointment.find();
-    res.json(appointments);
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching appointments", error: err.message });
-  }
-};
+## Table of Contents
 
-// Get appointments by logged-in user
-exports.getMyAppointments = async (req, res) => {
-  try {
-    const appointments = await Appointment.find({ user: req.user.id });
-    res.json(appointments);
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching your appointments", error: err.message });
-  }
-};
+* [Overview](#overview)
+* [Features](#features)
+* [Architecture & Folder Structure](#architecture--folder-structure)
+* [Installation](#installation)
+* [Configuration](#configuration)
+* [Usage](#usage)
+* [Roadmap](#roadmap)
+* [Contributing](#contributing)
+* [License](#license)
 
-// Update appointment
-exports.updateAppointment = async (req, res) => {
-  try {
-    const updated = await Appointment.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ message: "Appointment not found" });
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ message: "Error updating appointment", error: err.message });
-  }
-};
+## Overview
 
-// Delete appointment
-exports.deleteAppointment = async (req, res) => {
-  try {
-    const deleted = await Appointment.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Appointment not found" });
-    res.json({ message: "Appointment deleted" });
-  } catch (err) {
-    res.status(500).json({ message: "Error deleting appointment", error: err.message });
-  }
-};
+CPD360 NexGen Suite streamlines scheduling, patient management, and provider analytics in a unified platform. It consists of a Node/Express backend and a React-based frontend.
+
+## Features
+
+* Role-based authentication and routing (provider vs. patient)
+* Appointments CRUD operations
+* Scribe note integration
+* Provider analytics dashboard
+* Patient portal with messaging
+
+## Architecture & Folder Structure
+
+```bash
+CPD360/
+├── Backend_Rebuilt/        # Express API server
+│   ├── controllers/
+│   ├── dump/
+│   ├── logs/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── scripts/
+│   ├── worker/
+│   ├── .env
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── package.json
+│   └── server.js
+└── Frontend_Rebuilt/       # React application
+    └── src/
+        ├── components/    # Reusable UI components
+        ├── layouts/       # Page layouts
+        ├── pages/         # Route-based pages
+        ├── services/      # API call wrappers
+        ├── utils/         # Helper functions
+        ├── .env           # Environment variables
+        ├── App.js         # Root component
+        ├── index.js       # React entry point
+        └── main.js        # App bootstrap
+```
+
+## Installation
+
+1. **Backend**
+
+   ```bash
+   cd Backend_Rebuilt
+   npm install
+   ```
+2. **Frontend**
+
+   ```bash
+   cd Frontend_Rebuilt
+   npm install
+   ```
+
+## Configuration
+
+Copy `.env.example` to `.env` in each project and set the following:
+
+```
+# Backend_Rebuilt/.env
+PORT=4000
+MONGODB_URI=mongodb://<your-uri>
+JWT_SECRET=<your-secret>
+
+# Frontend_Rebuilt/.env
+REACT_APP_API_URL=http://localhost:4000/api
+```
+
+## Usage
+
+```bash
+# Start backend
+cd Backend_Rebuilt
+npm run dev
+
+# Start frontend
+cd ../Frontend_Rebuilt
+npm start
+```
+
+Open your browser at `http://localhost:3000`.
+
+## Roadmap
+
+* [x] Authentication & role routing
+* [ ] Appointments interfaces
+* [ ] Scribe upload & parsing
+* [ ] Analytics dashboard enhancements
+* [ ] Patient messaging improvements
+
+## Contributing
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/YourFeature`)
+3. Commit your changes (\`git commit -m "Add feature"
+4. Push to the branch (`git push origin feature/YourFeature`)
+5. Open a Pull Request
+
+## License
+
+MIT
