@@ -22,6 +22,10 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+// after your other `app.use(...)`
+const telehealthRoutes = require('./routes/telehealthRoutes');
+app.use('/api/telehealth', telehealthRoutes);
+
 
 mongoose.connect(process.env.DB_URI, {
   useNewUrlParser: true,
