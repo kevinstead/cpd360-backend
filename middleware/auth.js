@@ -1,3 +1,5 @@
+// middleware/auth.js
+
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User'); // only needed if you want to verify user still exists
@@ -41,4 +43,3 @@ const authorize = (...allowedRoles) => (req, res, next) => {
 };
 
 module.exports = { auth, authorize };
-
