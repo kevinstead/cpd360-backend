@@ -1,50 +1,54 @@
+// controllers/authController.js
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const jwt    = require("jsonwebtoken");
+const User   = require("../models/User");
 
-// ─── Register User ──────────────────────────────────────────────
 exports.registerUser = async (req, res) => {
   const { name, email, password, role } = req.body;
-
   try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    // 1) Check for duplicate email
+    if (await User.findOne({ email })) {
       return res.status(400).json({ msg: "User already exists" });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // 2) Hash password
+    const salt   = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(password, salt);
 
-    const newUser = await User.create({
+    // 3) Create user with explicit role
+    const newUser = new User({
       name,
       email,
-      password: hashedPassword,
+      password: hashed,
       role: role || "patient"
     });
+    await newUser.save();
 
-    const payload = {
-      id: newUser._id,
-      role: newUser.role
-    };
+    // 🔍 Log to verify
+    console.log(`✅ Registered new user "${name}" with role:`, newUser.role);
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+    // 4) Build & sign JWT
+    const payload     = { id: newUser._id, role: newUser.role };
+    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "1d"
     });
 
-    res.status(201).json({
-      token,
+    // 5) Respond with user info *including* role
+    return res.status(201).json({
+      token: accessToken,
       user: {
-        id: newUser._id,
-        name: newUser.name,
+        id:    newUser._id,
+        name:  newUser.name,
         email: newUser.email,
-        role: newUser.role
+        role:  newUser.role
       }
     });
   } catch (err) {
-    console.error("❌ Registration error:", err);
-    res.status(500).json({ msg: "Server error during registration" });
+    console.error("Register error:", err);
+    return res.status(500).json({ msg: "Server error" });
   }
 };
+
 
 // ─── Login User ─────────────────────────────────────────────────
 exports.loginUser = async (req, res) => {
