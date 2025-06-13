@@ -1,7 +1,6 @@
 {
-  "name": "cpd360-backend",
+  "name": "cpd360-backend_rebuilt",
   "version": "1.0.0",
-    "version": "1.0.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

@@ -24,7 +24,7 @@ exports.registerUser = async (req, res) => {
 
     const payload = {
       id: newUser._id,
-      role: newUser.role // 🔥 include role in token
+      role: newUser.role
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -62,14 +62,13 @@ exports.loginUser = async (req, res) => {
     }
 
     const payload = {
-      id: user._id,
-      role: user.role // 🔥 include role in token
-    };
+  id: user._id,
+  role: user.role
+};
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1d"
-    });
-
+const token = jwt.sign(payload, process.env.JWT_SECRET, {
+  expiresIn: "1d"
+});
     res.json({
       token,
       user: {
