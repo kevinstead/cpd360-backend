@@ -9,7 +9,6 @@ const express       = require('express');
 const cors          = require('cors');
 const mongoose      = require('mongoose');
 const cookieParser  = require('cookie-parser');
-
 const authRoutes        = require('./routes/auth');             // ← auth.js
 const appointmentRoutes = require('./routes/appointmentRoutes'); // appointmentRoutes.js
 const scribeRoutes      = require('./routes/scribeRoutes');      // scribeRoutes.js
