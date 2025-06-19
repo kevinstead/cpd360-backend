@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "BROWSER=msedge react-scripts start"
+    "start": "cross-env BROWSER=msedge react-scripts start"
   },
   "dependencies": {
     "aws-sdk": "^2.1692.0",
@@ -18,5 +18,8 @@
     "openai": "^5.1.1",
     "twilio": "^5.7.1",
     "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   }
 }
